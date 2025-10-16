@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التقويم الهجري | الإصدار النهائي الكامل</title>
+    <title>التقويم الهجري | الإصدار النهائي المصحح تماماً</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -355,8 +355,25 @@
         const countries = { 'اليمن': [ { nameAr: 'صنعاء', nameEn: 'Sana\'a', country: 'YE' }, { nameAr: 'عدن', nameEn: 'Aden', country: 'YE' }, { nameAr: 'تعز', nameEn: 'Taizz', country: 'YE' }, { nameAr: 'الحديدة', nameEn: 'Al Hudaydah', country: 'YE' }, { nameAr: 'إب', nameEn: 'Ibb', country: 'YE' }, { nameAr: 'ذمار', nameEn: 'Dhamar', country: 'YE' }, { nameAr: 'المكلا', nameEn: 'Al Mukalla', country: 'YE' }, { nameAr: 'عمران', nameEn: 'Amran', country: 'YE' }, { nameAr: 'أبين', nameEn: 'Abyan', country: 'YE' }, { nameAr: 'الضالع', nameEn: 'Ad Dali', country: 'YE' }, { nameAr: 'البيضاء', nameEn: 'Al Bayda', country: 'YE' }, { nameAr: 'الجوف', nameEn: 'Al Jawf', country: 'YE' }, { nameAr: 'المهرة', nameEn: 'Al Mahrah', country: 'YE' }, { nameAr: 'المحويت', nameEn: 'Al Mahwit', country: 'YE' }, { nameAr: 'حجة', nameEn: 'Hajjah', country: 'YE' }, { nameAr: 'لحج', nameEn: 'Lahij', country: 'YE' }, { nameAr: 'مأرب', nameEn: 'Marib', country: 'YE' }, { nameAr: 'ريمة', nameEn: 'Raymah', country: 'YE' }, { nameAr: 'صعدة', nameEn: 'Saada', country: 'YE' }, { nameAr: 'شبوة', nameEn: 'Shabwah', country: 'YE' }, { nameAr: 'سقطرى', nameEn: 'Socotra', country: 'YE' } ], 'المملكة العربية السعودية': [ { nameAr: 'الرياض', nameEn: 'Riyadh', country: 'SA' }, { nameAr: 'مكة المكرمة', nameEn: 'Makkah', country: 'SA' }, { nameAr: 'المدينة المنورة', nameEn: 'Madinah', country: 'SA' }, { nameAr: 'جدة', nameEn: 'Jeddah', country: 'SA' }, { nameAr: 'الدمام', nameEn: 'Dammam', country: 'SA' }, { nameAr: 'بريدة', nameEn: 'Buraydah', country: 'SA' }, { nameAr: 'أبها', nameEn: 'Abha', country: 'SA' }, { nameAr: 'تبوك', nameEn: 'Tabuk', country: 'SA' }, { nameAr: 'حائل', nameEn: 'Hail', country: 'SA' }, { nameAr: 'عرعر', nameEn: 'Arar', country: 'SA' }, { nameAr: 'جازان', nameEn: 'Jizan', country: 'SA' }, { nameAr: 'نجران', nameEn: 'Najran', country: 'SA' }, { nameAr: 'الباحة', nameEn: 'Al Bahah', country: 'SA' }, { nameAr: 'سكاكا', nameEn: 'Sakaka', country: 'SA' } ], 'دول أخرى': [ { nameAr: 'القاهرة', nameEn: 'Cairo', country: 'EG' }, { nameAr: 'دبي', nameEn: 'Dubai', country: 'AE' }, { nameAr: 'الدوحة', nameEn: 'Doha', country: 'QA' }, { nameAr: 'الكويت', nameEn: 'Kuwait City', country: 'KW' }, { nameAr: 'اسطنبول', nameEn: 'Istanbul', country: 'TR' } ] };
         
         async function fetchFromSheet(url) { if (!url) { return null; } try { const response = await fetch(url); if (!response.ok) throw new Error('Network response was not ok.'); return await response.text(); } catch (error) { console.error(`Failed to fetch from Google Sheet (${url}), using fallback.`, error); return null; } }
-        async function parseAdhkar(csvText) { const rows = csvText.split(/\r?\n/).map(row => row.trim().replace(/"/g, '')).filter(Boolean); if (rows.length > 0) rows.shift(); return rows.length > 0 ? rows : null; }
-        async function parseEvents(csvText) { const rows = csvText.split(/\r?\n/).map(row => row.trim()).filter(Boolean); if (rows.length < 2) return null; const headers = rows.shift().split(',').map(h => h.trim().replace(/"/g, '')); const events = rows.map(row => { const values = row.split(','); return headers.reduce((obj, header, i) => { obj[header] = values[i] ? values[i].trim().replace(/"/g, '') : ''; return obj; }, {}); }); const countdown = events.filter(e => e.name && e.startDate).map(e => ({ name: e.name, date: e.startDate })); const contextual = {}; events.filter(e => e.type && e.startDate && e.endDate).forEach(e => { const messages = Object.keys(e).filter(key => key.startsWith('message') && e[key]).map(key => e[key]); contextual[e.type] = { startDate: e.startDate, endDate: e.endDate, messages: messages }; }); return { countdown, contextual }; }
+        
+        function parseCsv(csvText) {
+            const rows = csvText.split(/\r?\n/).map(row => row.trim()).filter(Boolean);
+            if (rows.length < 1) return { headers: [], data: [] };
+            const headers = rows.shift().split(',').map(h => h.trim().replace(/"/g, ''));
+            const data = rows.map(row => {
+                const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                return headers.reduce((obj, header, i) => {
+                    let value = values[i] ? values[i].trim() : '';
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.substring(1, value.length - 1).replace(/""/g, '"');
+                    }
+                    obj[header] = value;
+                    return obj;
+                }, {});
+            });
+            return { headers, data };
+        }
+
         async function fetchAPI(url) { try { const response = await fetch(url, { cache: "no-store" }); if (!response.ok) throw new Error(`Network error: ${response.status}`); return await response.json(); } catch (error) { console.error("API Fetch Error:", error); throw error; } }
         async function fetchPrayerTimes(cityNameAr, cityNameEn, countryCode) { elements.prayerGrid.innerHTML = `<p class="text-center col-span-full text-gray-400">جاري تحميل مواقيت ${cityNameAr}...</p>`; if(nextPrayerInterval) clearInterval(nextPrayerInterval); const primaryUrl = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(cityNameEn)}&country=${countryCode}&method=3`; const backupUrl = `https://www.islamicfinder.us/index.php/api/prayer_times?city=${encodeURIComponent(cityNameEn)}&country=${countryCode}&method=3`; try { const data = await fetchAPI(primaryUrl); if (data.code !== 200) throw new Error('Primary API error'); handleSuccessfulPrayerData(data, cityNameAr, 'aladhan'); } catch (error) { console.warn("Primary API failed. Trying backup.", error); try { const data = await fetchAPI(backupUrl); if (data.success !== true) throw new Error('Backup API failed'); handleSuccessfulPrayerData(data, cityNameAr, 'islamicfinder'); } catch (backupError) { console.warn("Backup API failed. Loading from cache.", backupError); loadPrayerTimesFromCache(); } } }
         async function fetchPrayerTimesByCoords(lat, lon) { try {const cityResponse = await fetchAPI(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=3`); handleSuccessfulPrayerData(cityResponse, "موقعك الحالي", 'aladhan'); localStorage.removeItem('favoriteCity'); } catch (e) { console.error("Failed to fetch by coords:", e); elements.prayerGrid.innerHTML = `<p class="text-center col-span-full text-red-400">فشل تحديد المواقيت لموقعك.</p>`; } }
@@ -380,7 +397,7 @@
             setupModal();
 
             const eventsCsv = await fetchFromSheet(GOOGLE_SHEET_EVENTS_URL);
-            const eventsData = eventsCsv ? await parseEvents(eventsCsv) : fallbackData.events;
+            const eventsData = eventsCsv ? parseEvents(eventsCsv) : fallbackData.events;
             
             const context = getCurrentContext(eventsData.contextual);
             let messagesToDisplay;
@@ -389,7 +406,7 @@
                 messagesToDisplay = context.messages;
             } else {
                 const adhkarCsv = await fetchFromSheet(GOOGLE_SHEET_ADHAKR_URL);
-                const parsedAdhkar = adhkarCsv ? await parseAdhkar(adhkarCsv) : null;
+                const parsedAdhkar = adhkarCsv ? parseCsv(adhkarCsv).data.map(row => row.adhkar) : null;
                 messagesToDisplay = parsedAdhkar && parsedAdhkar.length > 0 ? parsedAdhkar : fallbackData.adhkar;
             }
             
@@ -421,4 +438,5 @@
     </script>
 </body>
 </html>
+
 
